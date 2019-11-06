@@ -1,0 +1,22 @@
+# dependencies
+/node_modules
+
+# production
+/build
+/secrets
+secrets
+secrets.json
+/tests
+tests
+/dist
+
+# misc
+.DS_Store
+
+# .vscode/
+
+local/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
