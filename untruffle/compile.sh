@@ -8,4 +8,3 @@ mkdir -p $OUTPUT_DIR
 solc -o $OUTPUT_DIR --bin --abi --optimize contracts/*.sol
 
 mkdir -p $CONTRACTS_BUILD_DIR
-mkdir -p $DEPLOY_BUILD_DIR

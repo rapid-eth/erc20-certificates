@@ -39,18 +39,26 @@ const ethersAccount = i => {
 const getContract = (address, abi) => {
   return new ethers.Contract(address, abi, provider);
 }
-
+const readDeployedFile = (name) => {
+  let contract = require(`@deployed/${networkName}/${name}.json`)
+  return contract
+}
+const getDeployedContract = (name) => {
+  let contract = require(`@deployed/${networkName}/${name}.json`)
+  return getContract(contract.networks[networkID].address, contract.abi)
+}
 const emptyAddress = '0x0000000000000000000000000000000000000000'
 
 module.exports = {
   ...ipfs,
   ...misc,
   ...signing,
+  readDeployedFile,
+  getDeployedContract,
   networkID,
   networkName,
   ethersAccount,
   provider,
-  getNonce,
   getContract,
   emptyAddress,
   parseUnits: ethers.utils.parseUnits
