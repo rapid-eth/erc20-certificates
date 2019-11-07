@@ -27,6 +27,7 @@ contract ExampleCoin is ERC20Certificate  {
          decimals = _decimalUnits;
         require(_capLimit > 0, "ERC20Capped: cap is 0");
         _cap = _capLimit;
+        condenserDelegates[msg.sender] = true;
     }
 
 

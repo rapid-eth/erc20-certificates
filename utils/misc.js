@@ -4,14 +4,7 @@ const readContractFile = (name) => {
     let contract = require(`@contracts/${name}.json`)
     return contract
 }
-const readDeployedFile = (name) => {
-    let contract = require(`@deployed/${networkName}/${name}.json`)
-    return contract
-}
-const getDeployedContract = (name) => {
-    let contract = require(`@deployed/${networkName}/${name}.json`)
-    return getContract(contract.networks[networkID].address, contract.abi)
-}
+
 
 const readFile = (file) => {
     let content = fs.readFileSync(file, "utf8");
@@ -35,8 +28,7 @@ const bnToInt = (bn) => {
 
 module.exports = {
     readContractFile,
-    readDeployedFile,
-    getDeployedContract,
+
     readFile,
     writeToFile,
     sleep,
