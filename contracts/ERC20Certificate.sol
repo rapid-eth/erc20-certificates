@@ -14,9 +14,6 @@ contract ERC20Certificate is ERC20, owned  {
     using ECDSA for bytes32;
     using SafeMath for uint256;
 
-    /// ###########################
-    /// ##    Certificates       ##
-    /// ###########################
     mapping (bytes32 => certificateType) public certificateTypes;
     mapping (address => bool) public condenserDelegates;
 
@@ -25,22 +22,6 @@ contract ERC20Certificate is ERC20, owned  {
         string metadata;
         mapping (address => bool) delegates;
         mapping (address => bool) claimed;
-    }
-
-    /**
-     * @dev Verifies that the msg.sender is a valid recipeint for the certificate
-     *
-     * Requirements:
-     *
-     * - the `signature` must match the hash data
-     * - the signer of the signature must be a delegate for a `_certificateID`
-     * - the certificate can not be already claimed by the msg.sender
-     */
-    modifier allowRedeem(bytes32 _certificateID, bytes memory _signature) {
-        bytes32 hash = keccak256(abi.encodePacked(_certificateID, address(this), msg.sender));
-        require(_isDelegateSigned(hash, _signature, _certificateID), "Not Delegate Signed");
-        require(!certificateTypes[_certificateID].claimed[msg.sender], "Cert already claimed");
-        _;
     }
 
     /**
@@ -67,7 +48,23 @@ contract ERC20Certificate is ERC20, owned  {
     }
 
     /**
-     * @dev Allows caller to pass an `_anchorSignature` and a `_certificateID` to
+     * @dev Allows owner to add a trusted address as a condenser delegate.
+     * Any address added to this mapping will be able to sign condensed certificates
+     */
+    function addCondenserDelegate(address _delegate) external onlyOwner {
+        condenserDelegates[_delegate] = true;
+    }
+    
+    /**
+     * @dev Allows owner to remove an address from the condenser delegate mapping.
+     */
+    function removeCondenserDelegate(address _delegate) external onlyOwner {
+        condenserDelegates[_delegate] = false;
+    }
+
+
+    /**
+     * @dev Allows caller to pass a `_signature` and a `_certificateID` to
      * mint tokens to their own address. The token amount minted is speficied in the
      * certificate. Can only be called once per caller, per certificate
      *
@@ -87,7 +84,13 @@ contract ERC20Certificate is ERC20, owned  {
         return true;
     }
 
-
+    /**
+     * @dev Allows caller to pass an `_signature`, a `_combinedValue` and a list of `_certificateIDs` to
+     * redeem a condensed certificate which has the summed value of each certificate in the list.
+     * This will fail if any of the certificates in the list has already been redeemed
+     *
+     * Emits a `CertificateRedeemed` event.
+     */
     function redeemCondensedCertificate(bytes calldata _signature, uint256 _combinedValue, bytes32[] calldata _certificateIDs)
     external
         returns (bool)
