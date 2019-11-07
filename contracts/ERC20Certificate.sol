@@ -18,6 +18,7 @@ contract ERC20Certificate is ERC20, owned  {
     /// ##    Certificates       ##
     /// ###########################
     mapping (bytes32 => certificateType) public certificateTypes;
+    mapping (address => bool) public condenserDelegates;
 
     struct certificateType {
         uint256 amount;
@@ -75,8 +76,7 @@ contract ERC20Certificate is ERC20, owned  {
     function redeemCertificate(bytes calldata _signature, bytes32 _certificateID) external
         returns (bool)
     {
-        //allow redeem?
-        bytes32 hash = keccak256(abi.encodePacked(_certificateID, address(this), msg.sender));
+        bytes32 hash = _getCertificateHash(_certificateID, msg.sender);
         require(_isDelegateSigned(hash, _signature, _certificateID), "Not Delegate Signed");
         require(!certificateTypes[_certificateID].claimed[msg.sender], "Cert already claimed");
 
@@ -87,6 +87,28 @@ contract ERC20Certificate is ERC20, owned  {
         return true;
     }
 
+
+    function redeemCondensedCertificate(bytes calldata _signature, uint256 _combinedValue, bytes32[] calldata _certificateIDs)
+    external
+        returns (bool)
+    {
+        bytes32 certIDsCondensed = _condenseCertificateIDs(_certificateIDs);
+        bytes32 condenserHash = _getCondensedCertificateHash(certIDsCondensed, _combinedValue, msg.sender);
+        address signer = condenserHash.toEthSignedMessageHash().recover(_signature);
+        require(condenserDelegates[signer], "Not valid condenser delegate");
+
+        for (uint8 i = 0; i < _certificateIDs.length; i++) {
+            require(!certificateTypes[_certificateIDs[i]].claimed[msg.sender], "Cert already claimed");
+            certificateTypes[_certificateIDs[i]].claimed[msg.sender] = true;
+        }
+
+        _mint(msg.sender, _combinedValue);
+        emit CondensedCertificateRedeemed(msg.sender, _combinedValue, _certificateIDs);
+        return true;
+    }
+
+
+
     // View Functions
 
     /**
@@ -95,12 +117,33 @@ contract ERC20Certificate is ERC20, owned  {
     function getCertificateData(bytes32 _certificateID) external view returns (string memory) {
         return certificateTypes[_certificateID].metadata;
     }
+    
+    /**
+     * @dev Returns the amount for a `_certificateID`
+     */
+    function getCertificateAmount(bytes32 _certificateID) external view returns (uint256) {
+        return certificateTypes[_certificateID].amount;
+    }
 
     /**
      * @dev Calls internal function to return the ID for a certificate from parameters used to create certificate
      */
     function getCertificateID(uint _amount, address[] calldata _delegates, string calldata _metadata) external view returns (bytes32) {
         return _getCertificateID(_amount,_delegates, _metadata);
+    }
+
+    /**
+     * @dev Calls internal function to return the hash to sign for a certificate to redeemer
+     */
+    function getCertificateHash(bytes32 _certificateID, address _redeemer) external view returns (bytes32) {
+        return _getCertificateHash(_certificateID, _redeemer);
+    }
+
+    /**
+     * @dev Calls internal function
+     */
+    function getCondensedCertificateHash(bytes32 _condensedIDHash, uint256 _amount, address _redeemer) external view returns (bytes32) {
+        return _getCondensedCertificateHash(_condensedIDHash, _amount, _redeemer);
     }
 
     /**
@@ -124,6 +167,10 @@ contract ERC20Certificate is ERC20, owned  {
         return certificateTypes[_certificateID].claimed[_recipient];
     }
 
+    function condenseCertificateIDs(bytes32[] calldata _ids) external pure returns (bytes32) {
+        return _condenseCertificateIDs(_ids);
+    }
+
     // Internal Functions
 
     /** @dev Packs an `_amount`, this contract's address, `_delegates` array, and string `_metadata`
@@ -133,12 +180,29 @@ contract ERC20Certificate is ERC20, owned  {
         return keccak256(abi.encodePacked(_amount,address(this),_delegates, _metadata));
     }
 
+    /** @dev something
+     */
+    function _getCondensedCertificateHash(bytes32 _condensedHash, uint256 _amount, address _redeemer) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked(_condensedHash, _amount, _redeemer, address(this)));
+    }
+
+    /** @dev something
+     */
+    function _condenseCertificateIDs(bytes32[] memory _ids) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_ids));
+    }
+
     /** @dev Checks a `_signature` with a `_messageHash` to verify if the signer is a delegate for a given `_certificateID`
      * and performs a keccak256 on the packed bytes and returns the bytes32 result
      */
     function _isDelegateSigned(bytes32 _messageHash, bytes memory _signature, bytes32 _certificateID) internal view returns (bool) {
         return certificateTypes[_certificateID].delegates[_messageHash.toEthSignedMessageHash().recover(_signature)];
     }
+
+    function _getCertificateHash(bytes32 _certificateID, address _redeemer) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked(_certificateID, address(this), _redeemer));
+    }
+
 
     /**
      * @dev Emitted when a new certificate is created for an `amount` that can have
@@ -151,4 +215,8 @@ contract ERC20Certificate is ERC20, owned  {
      */
     event CertificateRedeemed(address indexed caller, uint256 value, bytes32 certificateID);
 
+    /**
+     * @dev Emitted when a `caller` successfully redeems a certificate and receives `value` of tokens
+     */
+    event CondensedCertificateRedeemed(address indexed caller, uint256 value, bytes32[] certificateIDs);
 }
