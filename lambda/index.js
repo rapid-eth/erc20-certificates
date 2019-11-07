@@ -1,10 +1,19 @@
 
+const condenserService = require('./condenserService')
 
 
 exports.handler = async (event) => {
 
     const body = JSON.parse(event.body)
+    console.log("made it")
+    console.log(body)
 
+    try {
+        let result = await condenserService.parseBody(body)
+        return success(result)
+    } catch (err) {
+        fail(err)
+    }
 
 
 
@@ -18,7 +27,7 @@ const fail = (errorMessage, code) => {
     return {
         headers: responseHeaders,
         statusCode: code,
-        body: JSON.stringify({ lambda: lambdaName , error: errorMessage }),
+        body: JSON.stringify({error: errorMessage}),
     }
 }
 const success = (success) => {

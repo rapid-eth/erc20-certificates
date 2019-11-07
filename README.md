@@ -1,3 +1,6 @@
 # erc20-certificates
 
 The ERC20Certificate smart contract is an extension of the ERC20 token standard with certificate functionality added. This allows coin admins/owners to distribute signed certificates to users without requiring an ethereum transaction. A certificate is redeemable for an amount of tokens determined by the admin who created and signed it.
+
+
+Included in this extension is an experimental feature I am calling "Condensed Certificates". This feature allows many certificates to be "condensed" into one certificate via a condenser service. The way this works is the condenser service is essentially a trusted oracle which contains a signing key. The service can be sent a batch of certificates that have not yet been redeemed, validate that each certificate is valid and signed by a delegate, and create a new special type of certificate which can be redeemed for the sum of the values of each certificate. This feature was designed to significantly save gas cost when redeeming certificate batches, as the redeeming user now only needs one on-chain transaction instead of `n`.
