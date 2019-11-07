@@ -10,8 +10,8 @@ app.get("/", async (req,res) => {
     res.send("Local condenser service")
 })
 
-app.get("/delegate", async (req,res) => {
-    res.send("0x38733B81924735C81E9F494AA34E4D7F5753FB74")
+app.get("/signer", async (req,res) => {
+    res.send(condenserService.address)
 })
 
 app.post("/condense", async (req,res) => {

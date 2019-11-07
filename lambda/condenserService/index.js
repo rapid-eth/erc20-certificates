@@ -2,9 +2,9 @@
 const util = require('../util');
 const ethers = require('ethers')
 const abi = require('./ERC20Certificate').abi
-const pk = require('../secrets').signingKey
+const {address, signingKey} = require('../secrets')
 
-const wallet = new ethers.Wallet(pk)
+const wallet = new ethers.Wallet(signingKey)
 
 const parseBody = async (body) => {
     console.log('parsing...')
@@ -55,5 +55,6 @@ const verifyCert = async (cert, redeemerAddress, tokenContract) => {
 
 
 module.exports = {
-    parseBody
+    parseBody,
+    address
 }
